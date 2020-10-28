@@ -19,7 +19,6 @@ namespace POC.Dapper.Controllers
 
         public IConfiguration Configuration { get; }
 
-        // GET: CustomerController
         public ActionResult Index()
         {
             List<Customer> customers = new List<Customer>();
@@ -31,26 +30,30 @@ namespace POC.Dapper.Controllers
             return View(customers);
         }
 
-        // GET: CustomerController/Details/5
         public ActionResult Details(int id)
         {
             return View();
         }
 
-        // GET: CustomerController/Create
         public ActionResult Create()
         {
             return View();
         }
 
-        // POST: CustomerController/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(Customer customer)
         {
             try
             {
-                return RedirectToAction(nameof(Index));
+                using (IDbConnection db = new SqlConnection(Configuration.GetConnectionString("CustomerConnection")))
+                {
+                    string sqlQuery = "INSERT INTO Customers (FirstName, LastName, Email) Values(@FirstName, @LastName, @Email)";
+
+                    int rowsAffected = db.Execute(sqlQuery, customer);
+                }
+
+                return RedirectToAction("Index");
             }
             catch
             {
@@ -58,20 +61,34 @@ namespace POC.Dapper.Controllers
             }
         }
 
-        // GET: CustomerController/Edit/5
         public ActionResult Edit(int id)
         {
-            return View();
+            Customer customer = new Customer();
+            using (IDbConnection db = new SqlConnection(Configuration.GetConnectionString("CustomerConnection")))
+            {
+                customer = db.Query<Customer>("SELECT * FROM Customers WHERE CustomerID =" + id, new { id }).SingleOrDefault();
+            }
+
+            return View(customer);
         }
 
-        // POST: CustomerController/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public ActionResult Edit(Customer customer)
         {
             try
             {
-                return RedirectToAction(nameof(Index));
+                using (IDbConnection db = new SqlConnection(Configuration.GetConnectionString("CustomerConnection")))
+                {
+                    string sqlQuery = "UPDATE Customers SET FirstName='" + customer.FirstName +
+                                    "',LastName='" + customer.LastName +
+                                    "', Email='" + customer.Email +
+                                    "' WHERE CustomerID=" + customer.CustomerID;
+
+                    int rowsAffected = db.Execute(sqlQuery);
+                }
+
+                return RedirectToAction("Index");
             }
             catch
             {
@@ -79,20 +96,31 @@ namespace POC.Dapper.Controllers
             }
         }
 
-        // GET: CustomerController/Delete/5
+        [HttpGet]
         public ActionResult Delete(int id)
         {
-            return View();
+            Customer customer = new Customer();
+            using (IDbConnection db = new SqlConnection(Configuration.GetConnectionString("CustomerConnection")))
+            {
+                customer = db.Query<Customer>("SELECT * FROM Customers WHERE CustomerID =" + id, new { id }).SingleOrDefault();
+            }
+
+            return View(customer);
         }
 
-        // POST: CustomerController/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Delete(int id, IFormCollection collection)
         {
             try
             {
-                return RedirectToAction(nameof(Index));
+                using (IDbConnection db = new SqlConnection(Configuration.GetConnectionString("CustomerConnection")))
+                {
+                    string sqlQuery = "DELETE FROM Customers WHERE CustomerID =" + id;
+
+                    int rowsAffected = db.Execute(sqlQuery);
+                }
+                    return RedirectToAction("Index");
             }
             catch
             {
